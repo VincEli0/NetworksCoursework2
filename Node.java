@@ -174,19 +174,12 @@ public class Node implements NodeInterface {
         System.out.println("Bootstrap node added");
     }
 
-    private String generateTransactionID(){
-        txCounter++; //Debating on doing a wrap around
+    private String generateTransactionID() {
+        txCounter = (txCounter + 1) % (26 * 26);
 
-        char a = (char) ((txCounter >> 8) & 0xff);
-        char b = (char)(txCounter & 0xff);
+        char a = (char) ('a' + (txCounter / 26));
+        char b = (char) ('a' + (txCounter % 26));
 
-        if (a == ' '){
-            a = '!';
-        }
-
-        if (b == ' '){
-            b = '"';
-        }
         return "" + a + b;
     }
 
@@ -362,6 +355,7 @@ public class Node implements NodeInterface {
     }
 
     private void handleMessage(String message, InetAddress senderAddress, int senderPort) throws  Exception{
+        System.out.println("Raw Recieve " + message);
         String[] splitMessage = message.split(" ", 3);
 
         String transactionID = message.substring(0, 2);
@@ -468,6 +462,8 @@ public class Node implements NodeInterface {
     }
 
     private void sendMessage(String message, InetAddress address, int port) throws Exception{
+        System.out.println("Raw Send " + message);
+
         byte[] data = message.getBytes(StandardCharsets.UTF_8);
         DatagramPacket packet = new DatagramPacket(data, data.length, address, port);
         socket.send(packet);
@@ -920,7 +916,7 @@ public class Node implements NodeInterface {
         }
 
         String[] parts = response.split(" ", 4);
-        if (parts.length < 4 || !parts[1].equals("D")){
+        if (parts.length < 3 || !parts[1].equals("D")){
             return false;
         }
 
