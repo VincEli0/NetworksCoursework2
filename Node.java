@@ -2,9 +2,9 @@
 // Coursework 2024/2025
 //
 // Submission by
-//  YOUR_NAME_GOES_HERE
-//  YOUR_STUDENT_ID_NUMBER_GOES_HERE
-//  YOUR_EMAIL_GOES_HERE
+//  Elisha Vincent-Mushi
+//  STUDENT NUMBER: 210029902
+//  elisha.vincent-mushi@city.ac.uk
 
 
 // DO NOT EDIT starts
@@ -109,6 +109,7 @@ public class Node implements NodeInterface {
     }
 
     private String sha256Hex(String input) throws  Exception{
+        //generates a SHA-256 hash of the input string in hex form
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] encodedHash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
         StringBuilder hex = new StringBuilder();
@@ -193,7 +194,6 @@ public class Node implements NodeInterface {
                     }
 
                 } catch (Exception e) {
-                    // ignore and continue scanning
                 }
             }
         }
@@ -205,7 +205,7 @@ public class Node implements NodeInterface {
         this.socket = new DatagramSocket(portNumber);
 
         if (nodeName!= null){
-            addressBook.put(nodeName, InetAddress.getLocalHost().getHostAddress() + portNumber);
+            addressBook.put(nodeName, InetAddress.getLocalHost().getHostAddress() + ":" + portNumber);
         }
 
         System.out.println("Finding an available node to start with...");
@@ -213,6 +213,7 @@ public class Node implements NodeInterface {
     }
 
     private String generateTransactionID() {
+        // increments counter after 26*26 combinations eg: aa->zz
         txCounter = (txCounter + 1) % (26 * 26);
 
         char a = (char) ('a' + (txCounter / 26));
@@ -268,7 +269,7 @@ public class Node implements NodeInterface {
 
             String relayTxID = generateTransactionID();
 
-            sendMessage = relayTxID + " V " + encodeString(targetNodeName) + " " + request;
+            sendMessage = relayTxID + " V " + encodeString(targetNodeName) + request;
             sendAddress = relayAddress;
             responseTxID = relayTxID;
         }
@@ -303,7 +304,6 @@ public class Node implements NodeInterface {
 
     private int encodedStringLength(String input) throws Exception{
         int firstSpace = input.indexOf(' ');
-        //remember to do a check for malformed string
 
         int spaceCount = Integer.parseInt(input.substring(0, firstSpace));
         int valueStart = firstSpace + 1;
@@ -346,7 +346,7 @@ public class Node implements NodeInterface {
             return;
         }
 
-        String rest = parts[2];
+        String rest = parts[2]; // remaining parts of the message after the transactionID and message type
         int index = 0;
 
         while (index < rest.length()) {
@@ -692,6 +692,7 @@ public class Node implements NodeInterface {
         sendMessage(responseToOriginalSender, originalSenderAddress, originalSenderPort);
     }
     private void requestNearest(String targetHash) throws Exception {
+        //requests nearest nodes from the targetHash and then updates the addressbook.
         List<Map.Entry<String, String>> nodes = new ArrayList<>(addressBook.entrySet());
 
         for (Map.Entry<String, String> targetNode : nodes) {
@@ -720,6 +721,11 @@ public class Node implements NodeInterface {
         }
     }
     private  String decodeString(String input) throws  Exception{
+        /*
+        .Checks how many spaces the input string has
+        .loops until that many spaces are found
+        .Extracts the substring
+         */
         if (input == null || input.isEmpty()){
             throw new Exception("Invalid encoded string");
         }
@@ -757,6 +763,7 @@ public class Node implements NodeInterface {
         throw new Exception("Incomplete encoded String");
     }
     private String encodeString(String s) {
+        //converting into CRN format
         int spaces = 0;
 
         for (int i = 0; i < s.length(); i++) {
@@ -808,7 +815,7 @@ public class Node implements NodeInterface {
     }
 
     public void popRelay() throws Exception {
-        System.out.println("Pop the relaystack!");
+       // System.out.println("Pop the relaystack!");
         if (!relayStack.empty()){
            relayStack.pop();
        }
@@ -834,6 +841,12 @@ public class Node implements NodeInterface {
             return false;
         }
 
+        /*
+        parts[0] Transaction ID
+        parts[1] Message type
+        parts[2] Response code
+        parts[3] extra data
+         */
         String[] parts = response.split(" ", 4);
         if(parts.length < 3 || !parts[1].equals("F")){
             return false;
@@ -848,7 +861,7 @@ public class Node implements NodeInterface {
 	    if (key == null){
             throw new Exception("Key cannot be null");
         }
-        System.out.println("This is reading " + key);
+       // System.out.println("This is reading " + key);
 
         requestNearest(sha256Hex(key));
         List<Map.Entry<String, String>> PossibleNodes = getClosestAddressPairs(sha256Hex(key));
@@ -869,6 +882,9 @@ public class Node implements NodeInterface {
 
             String[] parts = response.split(" ", 4);
 
+            if (parts.length < 3 || !parts[1].equals("S")){
+                continue;
+            }
             String responseCode = parts[2];
 
             if(responseCode.equals("Y") && parts.length >= 4){
@@ -906,6 +922,12 @@ public class Node implements NodeInterface {
             if (response == null) {
                 continue;
             }
+        /*
+        parts[0] Transaction ID
+        parts[1] Message type
+        parts[2] Response code
+        parts[3] extra data
+         */
 
             String[] parts = response.split(" ", 4);
 
@@ -951,13 +973,18 @@ public class Node implements NodeInterface {
 
 
         String txID = generateTransactionID();
-        String request = txID + " C " + encodeString(key) + " " + encodeString(currentValue) + encodeString(newValue);
+        String request = txID + " C " + encodeString(key)  + encodeString(currentValue) + encodeString(newValue);
         String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         if (response == null){
             return false;
         }
-
+        /*
+        parts[0] Transaction ID
+        parts[1] Message type
+        parts[2] Response code
+        parts[3] extra data
+         */
         String[] parts = response.split(" ", 4);
         if (parts.length < 3 || !parts[1].equals("D")){
             return false;
