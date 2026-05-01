@@ -846,7 +846,7 @@ public class Node implements NodeInterface {
         }
 
         String txID = generateTransactionID();
-        String request = txID + " W " + encodeString(key) + " " + encodeString(value);
+        String request = txID + " W " + encodeString(key) + encodeString(value);
       //  System.out.println("This is writing requesting " + request);
        // sendToAddress(request, targetNode.getValue());
         String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
@@ -905,7 +905,7 @@ public class Node implements NodeInterface {
 
 
         String txID = generateTransactionID();
-        String request = txID + " C " + encodeString(key) + " " + encodeString(currentValue) + " " + encodeString(newValue);
+        String request = txID + " C " + encodeString(key) + " " + encodeString(currentValue) + encodeString(newValue);
         String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         if (response == null){
