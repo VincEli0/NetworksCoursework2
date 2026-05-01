@@ -552,6 +552,13 @@ public class Node implements NodeInterface {
         sendMessage(response, senderAddress, senderPort);
     }
 
+    private void storeKeyValue(String key, String value) {
+        if (key.startsWith("N:")) {
+            addressBook.put(key, value);
+        } else {
+            dataStore.put(key, value);
+        }
+    }
     private void handleWriteRequest(String transactionID, String key, String value, InetAddress senderAddress, int senderPort) throws Exception{
         boolean hasKey = dataStore.containsKey(key);
         boolean responsible = isResponsibleForKey(key);
@@ -560,20 +567,12 @@ public class Node implements NodeInterface {
         String responseCode;
 
         if (hasKey){
-            if (key.startsWith("N:")){
-                addressBook.put(key, value);
-            }else{
-                dataStore.put(key, value);
-            }
+            storeKeyValue(key, value);
             responseCode = "R";
         }
         else if (responsible)
         {
-            if (key.startsWith("N:")){
-                addressBook.put(key, value);
-            }else{
-                dataStore.put(key, value);
-            }
+            storeKeyValue(key, value);
             responseCode = "A";
         }
         else
@@ -810,7 +809,7 @@ public class Node implements NodeInterface {
 
         String txID = generateTransactionID();
         String request = txID + " R " + encodeString(key);
-        sendToAddress(request, targetNode.getValue());
+        //sendToAddress(request, targetNode.getValue());
 
         String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
         if (response == null){
@@ -856,7 +855,7 @@ public class Node implements NodeInterface {
         String txID = generateTransactionID();
         String request = txID + " W " + encodeString(key) + " " + encodeString(value);
       //  System.out.println("This is writing requesting " + request);
-        sendToAddress(request, targetNode.getValue());
+       // sendToAddress(request, targetNode.getValue());
         String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         //Just something to refer to
