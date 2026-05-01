@@ -238,7 +238,7 @@ public class Node implements NodeInterface {
             sendToAddress(sendMessage, sendAddress);
 
             Thread.sleep(200);
-            
+
             String response = waitForResponse(responseTxID, 5000);
 
             if (response!= null){
@@ -833,49 +833,35 @@ public class Node implements NodeInterface {
 
     public boolean write(String key, String value) throws Exception {
         //System.out.println("This is writing " + key + " " + value);
+
+
 	    if (key == null || value == null){
             throw new Exception("Key or Value cannot be null");
         }
 
-        requestNearest(sha256Hex(key));
-        Map.Entry<String, String> targetNode = getAnyKnownNode();
+        List<Map.Entry<String, String>> candidates = getClosestAddressPairs(sha256Hex(key));
 
-        if (targetNode == null){
-            if (dataStore.containsKey(key) || isResponsibleForKey(key)){
-                dataStore.put(key, value);
-                return true;
+        for (Map.Entry<String, String> targetNode : candidates) {
+            if (targetNode.getKey().equals(this.nodeName)) continue;
+
+            String txID = generateTransactionID();
+            String request = txID + " W " + encodeString(key) + encodeString(value);
+
+            String response = sendRequest(txID, request, targetNode.getKey(), targetNode.getValue());
+
+            if (response == null) continue;
+
+            String[] parts = response.split(" ", 4);
+
+            if (parts.length >= 3 && parts[1].equals("X")) {
+                String code = parts[2];
+
+                if (code.equals("A") || code.equals("R")) {
+                    return true;
+                }
             }
-            return false;
         }
-
-        String txID = generateTransactionID();
-        String request = txID + " W " + encodeString(key) + encodeString(value);
-      //  System.out.println("This is writing requesting " + request);
-       // sendToAddress(request, targetNode.getValue());
-        String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
-
-        //Just something to refer to
-        //parts[0] transactionID
-        //parts[1] message type eg: S or X
-        //parts[2] response code
-        //parts[3] encoded val
-        if (response == null){
-            return false;
-        }
-
-        String[] parts = response.split(" ", 4);
-
-        if (parts.length < 3){
-            return false;
-        }
-
-        if(!parts[1].equals("X")){
-            return false;
-        }
-
-        String code = parts[2];
-
-        return code.equals("A") || code.equals("R");
+        return false;
     }
 
     public boolean CAS(String key, String currentValue, String newValue) throws Exception {
