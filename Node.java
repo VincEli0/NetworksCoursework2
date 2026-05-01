@@ -194,9 +194,20 @@ public class Node implements NodeInterface {
     private Map.Entry<String, String> getAnyKnownNode(){
         for (Map.Entry<String, String> entry: addressBook.entrySet())
         {
-            if(!entry.getKey().equals(this.nodeName)){
-                return entry;
+            String key = entry.getKey();
+
+            if (key == null){
+                continue;
             }
+
+            if (!key.startsWith("N:")){
+                continue;
+            }
+
+            if (key.equals(this.nodeName)){
+                continue;
+            }
+            return entry;
         }
         return null;
     }
@@ -292,33 +303,36 @@ public class Node implements NodeInterface {
         throw new Exception("incomplete encoded String");
     }
 
-    private void parseNearestResponse(String response) throws Exception{
+    private void parseNearestResponse(String response) throws Exception {
         String[] parts = response.split(" ", 3);
 
-        if (parts.length < 2 || !parts[1].equals("O")){
-            return;
-        }
-
-        if (parts.length < 3){
+        if (parts.length < 3 || !parts[1].equals("O")) {
             return;
         }
 
         String rest = parts[2];
         int index = 0;
 
-        while(index < rest.length()){
-            String nodeName = decodeString(rest.substring(index));
-            int nodeNameEnd = encodedStringLength(rest.substring(index));
+        while (index < rest.length()) {
+            String remaining = rest.substring(index);
 
-            if (index >= rest.length()){
+            String nodeName = decodeString(remaining);
+            int nodeEnd = encodedStringLength(remaining);
+            index += nodeEnd + 1;
+
+            if (index >= rest.length()) {
                 break;
             }
 
-            String address = decodeString(rest.substring(index));
-            int addressEnd = encodedStringLength(rest.substring(index));
+            remaining = rest.substring(index);
+
+            String address = decodeString(remaining);
+            int addressEnd = encodedStringLength(remaining);
             index += addressEnd + 1;
 
-            addressBook.put(nodeName, address);
+            if (nodeName.startsWith("N:") && address.contains(":")){
+                addressBook.put(nodeName, address);
+            }
         }
     }
     public void handleIncomingMessages(int delay) throws Exception {
@@ -504,15 +518,28 @@ public class Node implements NodeInterface {
     }
 
 
+    private boolean hasKey(String key){
+        if(key.startsWith("N:")){
+            return addressBook.containsKey(key);
+        }
+        return dataStore.containsKey(key);
+    }
+
+    private String getValue(String key){
+        if (key.startsWith("N:")){
+            return addressBook.get(key);
+        }
+        return dataStore.get(key);
+    }
     private void handleReadRequest(String transactionID, String key, InetAddress senderAddress, int senderPort) throws Exception{
-        boolean hasKey = dataStore.containsKey(key);
+        boolean hasKey = hasKey(key);
         boolean responsible = isResponsibleForKey(key);
         String response;
         System.out.println("Handling Read REQUEST");
 
 
         if (hasKey){
-            String value = dataStore.get(key);
+            String value = getValue(key);
             response = transactionID + " S Y " + encodeString(value);
         }
         else if (responsible){
@@ -533,12 +560,20 @@ public class Node implements NodeInterface {
         String responseCode;
 
         if (hasKey){
-            dataStore.put(key, value);
+            if (key.startsWith("N:")){
+                addressBook.put(key, value);
+            }else{
+                dataStore.put(key, value);
+            }
             responseCode = "R";
         }
         else if (responsible)
         {
-            dataStore.put(key, value);
+            if (key.startsWith("N:")){
+                addressBook.put(key, value);
+            }else{
+                dataStore.put(key, value);
+            }
             responseCode = "A";
         }
         else
