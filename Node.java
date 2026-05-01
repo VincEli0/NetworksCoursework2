@@ -204,10 +204,10 @@ public class Node implements NodeInterface {
         sendMessage(message, ip, port);
     }
 
-    private String sendRequest(String txID, String request, String address) throws Exception{
+    private String sendRequest(String txID, String request, String targetNodeName, String targetAddress) throws Exception{
 
         String sendMessage = request;
-        String sendAddress = address;
+        String sendAddress = targetAddress;
         String responseTxID = txID;
 
         if (!relayStack.empty()){
@@ -220,7 +220,7 @@ public class Node implements NodeInterface {
 
             String relayTxID = generateTransactionID();
 
-            sendMessage = relayTxID + " V " + encodeString(relayNode) + " " + request;
+            sendMessage = relayTxID + " V " + encodeString(targetNodeName) + " " + request;
             sendAddress = relayAddress;
             responseTxID = relayTxID;
         }
@@ -613,7 +613,7 @@ public class Node implements NodeInterface {
         String txID = generateTransactionID();
         String request = txID + " N " + targetHash;
 
-        String response = sendRequest(txID, request, targetNode.getValue());
+        String response = sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
 
         if (response != null){
@@ -685,7 +685,7 @@ public class Node implements NodeInterface {
         String txID = generateTransactionID();
         String request = txID + " G";
 
-        String response = sendRequest(txID, request, targetNode.getValue());
+        String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         String[] parts = response.split(" ", 3);
 
@@ -727,7 +727,7 @@ public class Node implements NodeInterface {
         String txID = generateTransactionID();
         String request = txID + " E " + encodeString(key);
 
-        String response = sendRequest(txID, request, targetNode.getValue());
+        String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         if (response == null){
             return false;
@@ -760,7 +760,7 @@ public class Node implements NodeInterface {
         String request = txID + " R " + encodeString(key);
         sendToAddress(request, targetNode.getValue());
 
-        String response = sendRequest(txID, request, targetNode.getValue());
+        String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         if (response == null){
             return null;
@@ -806,7 +806,7 @@ public class Node implements NodeInterface {
         String request = txID + " W " + encodeString(key) + " " + encodeString(value);
       //  System.out.println("This is writing requesting " + request);
         sendToAddress(request, targetNode.getValue());
-        String response = sendRequest(txID, request, targetNode.getValue());
+        String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         //Just something to refer to
         //parts[0] transactionID
@@ -863,7 +863,7 @@ public class Node implements NodeInterface {
 
         String txID = generateTransactionID();
         String request = txID + " C " + encodeString(key) + " " + encodeString(currentValue) + " " + encodeString(newValue);
-        String response = sendRequest(txID, request, targetNode.getValue());
+        String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         if (response == null){
             return false;
@@ -890,7 +890,7 @@ public class Node implements NodeInterface {
         String txID = generateTransactionID();
         String request = txID + " N " + hash;
 
-        String response = sendRequest(txID, request, targetNode.getValue());
+        String response = sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
 
         System.out.println("Nearest response "+ response);
     }
