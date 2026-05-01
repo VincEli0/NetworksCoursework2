@@ -161,6 +161,45 @@ public class Node implements NodeInterface {
         }
         return false;
     }
+    private void findBootstrapNode() throws Exception {
+        String[] ips = {
+                "10.200.51.18",
+                "10.200.51.19"
+        };
+
+        for (String ip : ips) {
+            for (int port = 20110; port <= 20130; port++) {
+
+                String address = ip + ":" + port;
+                System.out.println("Trying bootstrap: " + address);
+
+                try {
+                    String txID = generateTransactionID();
+                    String request = txID + " G";
+
+                    sendToAddress(request, address);
+
+                    String response = waitForResponse(txID, 500);
+
+                    if (response != null) {
+                        String[] parts = response.split(" ", 3);
+
+                        if (parts.length >= 3 && parts[1].equals("H")) {
+                            String realName = decodeString(parts[2]);
+
+                            addressBook.put(realName, address);
+                            return;
+                        }
+                    }
+
+                } catch (Exception e) {
+                    // ignore and continue scanning
+                }
+            }
+        }
+
+        System.out.println("No bootstrap node found");
+    }
     public void openPort(int portNumber) throws Exception {
         this.port = portNumber; // rec port range is 20110–20130. just for future ref
         this.socket = new DatagramSocket(portNumber);
@@ -169,17 +208,8 @@ public class Node implements NodeInterface {
             addressBook.put(nodeName, InetAddress.getLocalHost().getHostAddress() + portNumber);
         }
 
-        List<String> bootstrapAddresses = List.of( //this is because nodes are dead
-                "10.200.51.18:20111",
-                "10.200.51.19:20110",
-                "10.200.51.19:20111"
-        );
-
-        for (int i = 0; i < bootstrapAddresses.size(); i++) {
-            addressBook.put("N:bootstrap" + i, bootstrapAddresses.get(i));
-        }
-
-        System.out.println("Bootstrap node added");
+        System.out.println("Finding an available node to start with...");
+        findBootstrapNode();//this is because sometimes I will get a dead port
     }
 
     private String generateTransactionID() {
