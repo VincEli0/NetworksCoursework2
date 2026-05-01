@@ -797,40 +797,35 @@ public class Node implements NodeInterface {
         System.out.println("This is reading " + key);
 
         requestNearest(sha256Hex(key));
-        Map.Entry<String, String> targetNode = getAnyKnownNode();
+        List<Map.Entry<String, String>> PossibleNodes = getClosestAddressPairs(sha256Hex(key));
 
-        System.out.println("Getting targetNode " +  targetNode);
+        for (Map.Entry<String, String> targetNode: PossibleNodes){
+            if (targetNode.getKey().equals(this.nodeName)){
+                continue;
+            }
 
-        if (targetNode == null){
-            return dataStore.get(key); //this is just in case I want to do local testing
+            String txID = generateTransactionID();
+            String request = txID + " R " + encodeString(key);
+
+            String response = sendRequest(txID, request, targetNode.getKey(), targetNode.getValue());
+
+            if (response == null){
+                continue;
+            }
+
+            String[] parts = response.split(" ", 4);
+
+            String responseCode = parts[2];
+
+            if(responseCode.equals("Y") && parts.length >= 4){
+                return decodeString(parts[3]);
+            }
+
+            if (responseCode.equals("N")){
+                return null;
+            }
         }
-
-        String txID = generateTransactionID();
-        String request = txID + " R " + encodeString(key);
-        //sendToAddress(request, targetNode.getValue());
-
-        String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
-        if (response == null){
-            return null;
-        }
-
-        String[] parts = response.split(" ", 4);
-        //parts[0] transactionID
-        //parts[1] message type eg: S or X
-        //parts[2] response code
-        //parts[3] encoded val
-
-        if (parts.length < 3 || !parts[1].equals("S")){
-            return null;
-        }
-
-        String responseCode = parts[2];
-
-        if (responseCode.equals("Y") && parts.length >=4){
-            return decodeString(parts[3]);
-        }
-        handleIncomingMessages(1);
-        return null;
+        return dataStore.get(key);
     }
 
     public boolean write(String key, String value) throws Exception {
