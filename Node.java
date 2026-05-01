@@ -169,7 +169,7 @@ public class Node implements NodeInterface {
             addressBook.put(nodeName, "10.216.34.172:" + portNumber);//this is just for local testing remember to use the actual ipaddress later on
         }
 
-        addressBook.put("N:bootstrap", "10.216.34.172:20110");
+        addressBook.put("N:bootstrap", "10.200.51.18:20111");
 
         System.out.println("Bootstrap node added");
     }
