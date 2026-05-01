@@ -166,8 +166,12 @@ public class Node implements NodeInterface {
         this.socket = new DatagramSocket(portNumber);
 
         if (nodeName!= null){
-            addressBook.put(nodeName, "127.0.0.1:" + portNumber);//this is just for local testing remember to use the actual ipaddress later on
+            addressBook.put(nodeName, "10.216.34.172:" + portNumber);//this is just for local testing remember to use the actual ipaddress later on
         }
+
+        addressBook.put("N:bootstrap", "10.216.34.172:20110");
+
+        System.out.println("Bootstrap node added");
     }
 
     private String generateTransactionID(){
@@ -421,10 +425,21 @@ public class Node implements NodeInterface {
                 break;
             }
 
+            case "H":{
+                String realName = decodeString(rest);
+
+                String senderHost = senderAddress.getHostAddress();
+                String sendValue = senderHost + ":" + senderPort;
+
+                addressBook.put(realName, sendValue);
+
+                responses.put(transactionID, message);
+                break;
+            }
+
             case "S":
             case "X":
             case "F":
-            case "H":
             case "D":
             case "O":
             {
@@ -752,6 +767,8 @@ public class Node implements NodeInterface {
         requestNearest(sha256Hex(key));
         Map.Entry<String, String> targetNode = getAnyKnownNode();
 
+        System.out.println("Getting targetNode " +  targetNode);
+
         if (targetNode == null){
             return dataStore.get(key); //this is just in case I want to do local testing
         }
@@ -761,7 +778,6 @@ public class Node implements NodeInterface {
         sendToAddress(request, targetNode.getValue());
 
         String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
-        System.out.println("Getting targetNode value" + targetNode.getValue());
         if (response == null){
             return null;
         }
