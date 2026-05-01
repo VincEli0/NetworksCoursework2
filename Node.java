@@ -226,6 +226,8 @@ public class Node implements NodeInterface {
         String sendAddress = targetAddress;
         String responseTxID = txID;
 
+        System.out.println("Sending to address: " + sendAddress);
+
         if (!relayStack.empty()){
             String relayNode = relayStack.peek();
             String relayAddress = addressBook.get(relayNode);
@@ -659,21 +661,32 @@ public class Node implements NodeInterface {
 
         sendMessage(responseToOriginalSender, originalSenderAddress, originalSenderPort);
     }
-    private void requestNearest(String targetHash) throws  Exception{
-        Map.Entry<String, String> targetNode = getAnyKnownNode();
+    private void requestNearest(String targetHash) throws Exception {
+        List<Map.Entry<String, String>> nodes = new ArrayList<>(addressBook.entrySet());
 
-        if (targetNode == null){
-            return;
-        }
+        for (Map.Entry<String, String> targetNode : nodes) {
+            if (targetNode.getKey().equals(this.nodeName)) {
+                continue;
+            }
 
-        String txID = generateTransactionID();
-        String request = txID + " N " + targetHash;
+            if (!targetNode.getKey().startsWith("N:")) {
+                continue;
+            }
 
-        String response = sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
+            String txID = generateTransactionID();
+            String request = txID + " N " + targetHash;
 
+            String response = sendRequest(
+                    txID,
+                    request,
+                    targetNode.getKey(),
+                    targetNode.getValue()
+            );
 
-        if (response != null){
-            parseNearestResponse(response);
+            if (response != null) {
+                parseNearestResponse(response);
+                return;
+            }
         }
     }
     private  String decodeString(String input) throws  Exception{
