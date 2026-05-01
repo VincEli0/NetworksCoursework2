@@ -236,6 +236,9 @@ public class Node implements NodeInterface {
         for (int attempt = 0; attempt < 3; attempt++){
             System.out.println("Send attempt " + (attempt + 1) + " " + request);
             sendToAddress(sendMessage, sendAddress);
+
+            Thread.sleep(200);
+            
             String response = waitForResponse(responseTxID, 5000);
 
             if (response!= null){
