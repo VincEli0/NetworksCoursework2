@@ -702,14 +702,16 @@ public class Node implements NodeInterface {
         }
         throw new Exception("Incomplete encoded String");
     }
-    private String encodeString(String s){
+    private String encodeString(String s) {
         int spaces = 0;
-        for (int i = 0; i < s.length(); i++){
-            if(s.charAt(i) == ' ') {
+
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == ' ') {
                 spaces++;
             }
         }
-        return spaces + " " + s;
+
+        return spaces + " " + s + " ";
     }
 
     public boolean isActive(String nodeName) throws Exception {
