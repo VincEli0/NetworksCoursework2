@@ -883,24 +883,29 @@ public class Node implements NodeInterface {
     }
 
     public boolean write(String key, String value) throws Exception {
-        //System.out.println("This is writing " + key + " " + value);
-
-
-	    if (key == null || value == null){
+        if (key == null || value == null) {
             throw new Exception("Key or Value cannot be null");
         }
 
-        List<Map.Entry<String, String>> candidates = getClosestAddressPairs(sha256Hex(key));
+        String keyHash = sha256Hex(key);
+
+        requestNearest(keyHash);
+
+        List<Map.Entry<String, String>> candidates = getClosestAddressPairs(keyHash);
 
         for (Map.Entry<String, String> targetNode : candidates) {
-            if (targetNode.getKey().equals(this.nodeName)) continue;
+            if (targetNode.getKey().equals(this.nodeName)) {
+                continue;
+            }
 
             String txID = generateTransactionID();
             String request = txID + " W " + encodeString(key) + encodeString(value);
 
             String response = sendRequest(txID, request, targetNode.getKey(), targetNode.getValue());
 
-            if (response == null) continue;
+            if (response == null) {
+                continue;
+            }
 
             String[] parts = response.split(" ", 4);
 
@@ -912,6 +917,7 @@ public class Node implements NodeInterface {
                 }
             }
         }
+
         return false;
     }
 
