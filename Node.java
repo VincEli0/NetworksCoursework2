@@ -761,7 +761,7 @@ public class Node implements NodeInterface {
         sendToAddress(request, targetNode.getValue());
 
         String response =  sendRequest(txID, request, targetNode.getKey(),targetNode.getValue());
-
+        System.out.println("Getting targetNode value" + targetNode.getValue());
         if (response == null){
             return null;
         }
