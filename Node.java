@@ -209,7 +209,7 @@ public class Node implements NodeInterface {
         }
 
         System.out.println("Finding an available node to start with...");
-        findBootstrapNode();//this is because sometimes I will get a dead port
+        //findBootstrapNode();//this is because sometimes I will get a dead port
     }
 
     private String generateTransactionID() {
@@ -372,29 +372,25 @@ public class Node implements NodeInterface {
         }
     }
     public void handleIncomingMessages(int delay) throws Exception {
-        if (delay == 0){
-            socket.setSoTimeout(0);
+        socket.setSoTimeout(delay);
+
+        // Keep serving packets until the socket has been idle for `delay` ms.
+        // A delay of zero gives DatagramSocket an infinite timeout, so this
+        // loop becomes the long-running receiver used by LocalTest's threads.
+        while (true) {
+            byte[] buffer = new byte[1024];
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+            try {
+                socket.receive(packet);
+            } catch (SocketTimeoutException e) {
+                return;
+            }
+
+            String message = new String(
+                    packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
+            handleMessage(message, packet.getAddress(), packet.getPort());
         }
-        else{
-            socket.setSoTimeout(delay);
-        }
-
-        byte[] buffer = new byte[1024];
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
-        try{
-            socket.receive(packet);
-        }catch (SocketTimeoutException e){
-            return;
-        }
-
-        String message = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
-
-        InetAddress senderAddress = packet.getAddress();
-        int senderPort = packet.getPort();
-
-        //handleMessage function here
-        handleMessage(message, senderAddress, senderPort);
     }
 
     private void handleMessage(String message, InetAddress senderAddress, int senderPort) throws  Exception{
@@ -544,12 +540,10 @@ public class Node implements NodeInterface {
         List<Map.Entry<String, String>> closest = getClosestAddressPairs(targetHash);
 
         StringBuilder response = new StringBuilder();
-        response.append(transactionID).append(" O");
+        response.append(transactionID).append(" O ");
 
         for(Map.Entry<String, String> entry: closest){
-            response.append(" ");
             response.append(encodeString(entry.getKey()));
-            response.append(" ");
             response.append(encodeString(entry.getValue()));
         }
 
@@ -601,7 +595,7 @@ public class Node implements NodeInterface {
     private void handleWriteRequest(String transactionID, String key, String value, InetAddress senderAddress, int senderPort) throws Exception{
         boolean hasKey = dataStore.containsKey(key);
         boolean responsible = isResponsibleForKey(key);
-        System.out.println("Handling Write REQUEST");
+        System.out.println("Handling Write REQUEST" +  hasKey +" "+ " "+responsible);
 
         String responseCode;
 
@@ -825,6 +819,10 @@ public class Node implements NodeInterface {
 	    if (key == null){
             throw new Exception("Key cannot be null");
         }
+        // Node 0 in LocalTest is not given its own receiver thread. Public
+        // operations therefore need to process any queued bootstrap message
+        // before selecting a peer.
+        handleIncomingMessages(1);
         System.out.println("Checking if this exists " + key);
         Map.Entry<String, String> targetNode = getAnyKnownNode();
 
@@ -861,6 +859,7 @@ public class Node implements NodeInterface {
 	    if (key == null){
             throw new Exception("Key cannot be null");
         }
+        handleIncomingMessages(1);
        // System.out.println("This is reading " + key);
 
         requestNearest(sha256Hex(key));
@@ -902,6 +901,8 @@ public class Node implements NodeInterface {
         if (key == null || value == null) {
             throw new Exception("Key or Value cannot be null");
         }
+
+        handleIncomingMessages(1);
 
         String keyHash = sha256Hex(key);
 
@@ -953,7 +954,7 @@ public class Node implements NodeInterface {
 
         handleIncomingMessages(1);
 
-        if (targetNode == null){ //Again this is just for local testing
+        if (targetNode == null){ //this is just for local testing
             if (dataStore.containsKey(key)){
                 String stored = dataStore.get(key);
 
